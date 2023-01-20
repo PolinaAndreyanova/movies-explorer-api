@@ -5,6 +5,8 @@ const User = require('../models/user');
 
 const { SUCCESS_OK_CODE, SUCCESS_CREATED_CODE } = require('../utils/constants');
 
+const { NODE_ENV, JWT_SECRET } = process.env;
+
 const BadRequestError = require('../errors/bad-request-error');
 const InternalServerError = require('../errors/internal-server-error');
 const NotFoundError = require('../errors/not-found-error');
@@ -52,4 +54,62 @@ const updateUserInfo = (req, res, next) => {
     });
 };
 
-module.exports = { getUser, updateUserInfo };
+const createUser = (req, res, next) => {
+  const { email, password, name } = req.body;
+
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({ email, password: hash, name })
+      .then((user) => {
+        res.status(SUCCESS_CREATED_CODE).send({
+          _id: user._id,
+          email: user.email,
+          name: user.name,
+        });
+      })
+      .catch((error) => {
+        if (error.name === 'ValidationError') {
+          return next(new BadRequestError('Переданы некорректные данные'));
+        }
+
+        if (error.code === 11000) {
+          return next(new ConflictError('Пользователь с данным email уже существует'));
+        }
+
+        return next(new InternalServerError('Произошла ошибка'));
+      }));
+};
+
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (user === null) {
+        next(new UnauthorizedError('Неправильные почта или пароль'));
+      } else {
+        bcrypt.compare(password, user.password)
+          .then((matched) => {
+            if (!matched) {
+              return next(new UnauthorizedError('Неправильные почта или пароль'));
+            }
+
+            const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
+
+            return res.status(SUCCESS_OK_CODE).send({ jwt: token });
+          })
+          .catch(() => {
+            next(new InternalServerError('Произошла ошибка'));
+          });
+      }
+    })
+    .catch(() => {
+      next(new InternalServerError('Произошла ошибка'));
+    });
+};
+
+module.exports = {
+  getUser,
+  updateUserInfo,
+  createUser,
+  login,
+};

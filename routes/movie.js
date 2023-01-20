@@ -26,3 +26,5 @@ router.delete('/:_id', celebrate({
     _id: Joi.string().hex().alphanum().length(24),
   }).unknown(true),
 }), deleteMovie);
+
+module.exports = router;
