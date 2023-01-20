@@ -11,6 +11,7 @@ const movieRouter = require('./routes/movie');
 const { login, createUser } = require('./controllers/user');
 
 const { checkAuth } = require('./middlewares/auth');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const NotFoundError = require('./errors/not-found-error');
 
@@ -47,6 +48,8 @@ app.use(bodyParser.json());
 //   return next();
 // });
 
+app.use(requestLogger);
+
 app.use('/users', checkAuth, userRouter);
 
 app.use('/movies', checkAuth, movieRouter);
@@ -69,6 +72,8 @@ app.post('/signup', celebrate({
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Путь не найден'));
 });
+
+app.use(errorLogger);
 
 app.use(errors());
 
