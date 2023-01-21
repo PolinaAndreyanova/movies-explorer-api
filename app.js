@@ -3,17 +3,12 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const { Joi, celebrate, errors } = require('celebrate');
+const { errors } = require('celebrate');
 
-const userRouter = require('./routes/user');
-const movieRouter = require('./routes/movie');
+const routes = require('./routes/index');
 
-const { login, createUser } = require('./controllers/user');
-
-const { checkAuth } = require('./middlewares/auth');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-
-const NotFoundError = require('./errors/not-found-error');
+const errorHandler = require('./middlewares/error');
 
 const { PORT = 3000, NODE_ENV, MONGO_DB } = process.env;
 
@@ -50,40 +45,13 @@ app.use(bodyParser.json());
 
 app.use(requestLogger);
 
-app.use('/users', checkAuth, userRouter);
-
-app.use('/movies', checkAuth, movieRouter);
-
-app.post('/signin', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required(),
-  }),
-}), login);
-
-app.post('/signup', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required(),
-    name: Joi.string().min(2).max(30),
-  }),
-}), createUser);
-
-app.use('*', (req, res, next) => {
-  next(new NotFoundError('Путь не найден'));
-});
+app.use(routes);
 
 app.use(errorLogger);
 
 app.use(errors());
 
-app.use((err, req, res, next) => {
-  const { statusCode = 500, message } = err;
-
-  res.status(statusCode).send({ message: statusCode === 500 ? 'Произошла ошибка' : message });
-
-  next();
-});
+app.use(errorHandler);
 
 mongoose.connect(NODE_ENV === 'production' ? MONGO_DB : 'mongodb://127.0.0.1/bitfilmsdb', { useNewUrlParser: true })
   .then(() => {
