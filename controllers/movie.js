@@ -30,7 +30,7 @@ const createMovie = (req, res, next) => {
     year,
     description,
     image,
-    trailer,
+    trailerLink,
     nameRU,
     nameEN,
     thumbnail,
@@ -44,15 +44,17 @@ const createMovie = (req, res, next) => {
     year,
     description,
     image,
-    trailer,
+    trailerLink,
     nameRU,
     nameEN,
     thumbnail,
     movieId,
+    owner: req.user,
   })
     .then((movie) => res.status(SUCCESS_CREATED_CODE).send(movie))
     .catch((error) => {
       if (error.name === 'ValidationError') {
+        console.log(error);
         return next(new BadRequestError('Переданы некорректные данные'));
       }
 
@@ -61,7 +63,7 @@ const createMovie = (req, res, next) => {
 };
 
 const deleteMovie = (req, res, next) => {
-  const _id = req.params.cardId;
+  const { _id } = req.params;
 
   Movie.findByIdAndDelete(_id)
     .then((movie) => {
