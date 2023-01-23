@@ -5,11 +5,13 @@ const { SUCCESS_OK_CODE, SUCCESS_CREATED_CODE } = require('../utils/constants');
 const BadRequestError = require('../errors/bad-request-error');
 const InternalServerError = require('../errors/internal-server-error');
 const NotFoundError = require('../errors/not-found-error');
+const ForbiddenError = require('../errors/forbidden-error');
 
 const getMovies = (req, res, next) => {
   const { _id } = req.user;
 
   Movie.find({ owner: _id })
+    .populate(['owner'])
     .then((movies) => {
       if (movies === null) {
         return next(new NotFoundError('Фильмы не найдены'));
@@ -51,7 +53,15 @@ const createMovie = (req, res, next) => {
     movieId,
     owner: req.user,
   })
-    .then((movie) => res.status(SUCCESS_CREATED_CODE).send(movie))
+    .then((movie) => {
+      Movie.findById(movie._id)
+        .populate(['owner'])
+        .then((newMovie) => res.status(SUCCESS_CREATED_CODE).send(newMovie))
+        .catch(() => {
+          next(new InternalServerError('Произошла ошибка'));
+        });
+      // res.status(SUCCESS_CREATED_CODE).send(movie);
+    })
     .catch((error) => {
       if (error.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные'));
@@ -64,13 +74,20 @@ const createMovie = (req, res, next) => {
 const deleteMovie = (req, res, next) => {
   const { _id } = req.params;
 
-  Movie.findByIdAndDelete(_id)
+  Movie.findById(_id)
+    .populate(['owner'])
     .then((movie) => {
       if (movie === null) {
-        return next(new NotFoundError('Фильм не найден'));
+        next(new NotFoundError('Фильм не найден'));
+      } else if (movie.owner._id.toString() !== req.user._id) {
+        next(new ForbiddenError('Доступ запрещён'));
+      } else {
+        Movie.findByIdAndRemove(_id)
+          .populate(['owner'])
+          .then(() => {
+            res.status(SUCCESS_OK_CODE).send(movie);
+          });
       }
-
-      return res.status(SUCCESS_OK_CODE).send(movie);
     })
     .catch((error) => {
       if (error.name === 'CastError') {
