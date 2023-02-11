@@ -2,7 +2,7 @@
 Backend дипломного проекта в Яндекс Практикуме
 
 ## IP
-84.252.139.4
+158.160.17.202
 
 ## Backend
 https://api.polina.students.nomoredomains.rocks
