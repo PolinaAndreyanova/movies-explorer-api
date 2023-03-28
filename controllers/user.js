@@ -50,6 +50,10 @@ const updateUserInfo = (req, res, next) => {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
 
+      if (error.code === 11000) {
+        return next(new ConflictError('Пользователь с данным email уже существует'));
+      }
+
       return next(new InternalServerError('Произошла ошибка'));
     });
 };
