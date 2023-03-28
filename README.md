@@ -1,8 +1,17 @@
-# movies-explorer-api
-Backend дипломного проекта в Яндекс Практикуме
+# Проект: movies-explorer-api
 
-## IP
-158.160.17.202
+**Описание**
 
-## Backend
-https://api.polina.students.nomoredomains.rocks
+Backend дипломного проекта в Яндекс Практикуме. [Frontend](https://github.com/PolinaAndreyanova/movies-explorer-frontend)
+
+**Функциональность**
+* Авторизация и регистрация пользователя
+* Редактирование профиля
+* Поиск фильмов
+* Сохранение фильма в избранном
+* Валидация данных
+
+**Стек технологий**
+* JavaScript
+* Node.js
+* MongoDB
